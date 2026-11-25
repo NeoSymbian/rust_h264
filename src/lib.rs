@@ -67,7 +67,10 @@
 
 #![cfg_attr(feature = "portable-simd", feature(portable_simd))]
 // NeoSymbian: the NEON kernels on 32-bit ARM (the intrinsics are nightly there)
-#![cfg_attr(target_arch = "arm", feature(stdarch_arm_neon_intrinsics))]
+#![cfg_attr(
+    all(target_arch = "arm", target_feature = "neon", target_endian = "little"),
+    feature(stdarch_arm_neon_intrinsics)
+)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[macro_use]
