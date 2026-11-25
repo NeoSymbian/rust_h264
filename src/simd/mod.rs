@@ -19,6 +19,7 @@
         target_arch = "aarch64",
         all(target_arch = "arm", target_feature = "neon")
     ),
+    target_endian = "little",
     not(feature = "portable-simd")
 ))]
 mod neon;
@@ -34,14 +35,15 @@ mod x86;
         target_arch = "aarch64",
         all(target_arch = "arm", target_feature = "neon")
     ),
+    target_endian = "little",
     not(feature = "portable-simd")
 ))]
 pub use neon::*;
 #[cfg(feature = "portable-simd")]
 pub use portable::*;
 #[cfg(not(any(
-    target_arch = "aarch64",
-    all(target_arch = "arm", target_feature = "neon"),
+    all(target_arch = "aarch64", target_endian = "little"),
+    all(target_arch = "arm", target_feature = "neon", target_endian = "little"),
     target_arch = "x86_64",
     feature = "portable-simd"
 )))]
