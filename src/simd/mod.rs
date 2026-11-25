@@ -3,7 +3,7 @@
 //! Four backends share one function set, selected at compile time:
 //! - `portable` (`portable-simd` feature, nightly): `core::simd` kernels that
 //!   lower to the target's native SIMD.
-//! - `neon` (aarch64, default): hand-written NEON for the luma half-pel
+//! - `neon` (aarch64, and 32-bit ARM with NEON; default): hand-written NEON for the luma half-pel
 //!   filters; everything else falls through to scalar.
 //! - `x86` (x86_64, default): SSE2 baseline with runtime-detected SSSE3 /
 //!   AVX2 / AVX-512 tiers (detection needs the `std` feature; without it
@@ -14,7 +14,13 @@
 //! All backends must be bit-exact with `scalar`; the golden corpus digest
 //! test below is the gate.
 
-#[cfg(all(target_arch = "aarch64", not(feature = "portable-simd")))]
+#[cfg(all(
+    any(
+        target_arch = "aarch64",
+        all(target_arch = "arm", target_feature = "neon")
+    ),
+    not(feature = "portable-simd")
+))]
 mod neon;
 #[cfg(feature = "portable-simd")]
 mod portable;
@@ -23,12 +29,19 @@ pub(crate) mod scalar;
 #[cfg(all(target_arch = "x86_64", not(feature = "portable-simd")))]
 mod x86;
 
-#[cfg(all(target_arch = "aarch64", not(feature = "portable-simd")))]
+#[cfg(all(
+    any(
+        target_arch = "aarch64",
+        all(target_arch = "arm", target_feature = "neon")
+    ),
+    not(feature = "portable-simd")
+))]
 pub use neon::*;
 #[cfg(feature = "portable-simd")]
 pub use portable::*;
 #[cfg(not(any(
     target_arch = "aarch64",
+    all(target_arch = "arm", target_feature = "neon"),
     target_arch = "x86_64",
     feature = "portable-simd"
 )))]

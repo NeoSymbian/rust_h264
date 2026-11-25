@@ -1,4 +1,4 @@
-//! Hand-written NEON (aarch64) motion-compensation kernels.
+//! Hand-written NEON motion-compensation kernels (aarch64, and 32-bit ARM with NEON: NeoSymbian).
 //!
 //! Covers the luma half-pel and quarter-pel filters, chroma bilinear
 //! interpolation, bi-prediction averaging, and the deblocking filters
@@ -8,7 +8,17 @@
 //! bit-exact with `scalar.rs` (checked against it on random input in
 //! `mod.rs`, and by the golden corpus digest test).
 
+#[cfg(target_arch = "aarch64")]
 use core::arch::aarch64::*;
+#[cfg(target_arch = "arm")]
+use core::arch::arm::*;
+
+/// AArch32 has no `vmovl_high_u8`: the high half widened.
+#[cfg(target_arch = "arm")]
+#[inline(always)]
+unsafe fn vmovl_high_u8(v: uint8x16_t) -> uint16x8_t {
+    unsafe { vmovl_u8(vget_high_u8(v)) }
+}
 
 use crate::inter_pred::{avg, clip_u8, fir6};
 
