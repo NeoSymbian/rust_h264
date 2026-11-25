@@ -76,6 +76,33 @@ mod no_std {
             unsafe { &*ptr }
         }
     }
+
+    // The value lives in a Box: without this every picture's motion data (about 1 MB at 720p) leaked.
+    impl<T> Drop for OnceLock<T> {
+        fn drop(&mut self) {
+            let ptr = *self.ptr.get_mut();
+            if !ptr.is_null() {
+                // SAFETY: `ptr` came from `Box::into_raw` in `get_or_init` and `&mut self` means no reader is left.
+                drop(unsafe { Box::from_raw(ptr) });
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::OnceLock;
+        use alloc::rc::Rc;
+
+        #[test]
+        fn the_value_is_dropped() {
+            let v = Rc::new(());
+            let once = OnceLock::new();
+            once.get_or_init(|| v.clone());
+            assert_eq!(Rc::strong_count(&v), 2);
+            drop(once);
+            assert_eq!(Rc::strong_count(&v), 1);
+        }
+    }
 }
 
 #[cfg(not(feature = "std"))]
